@@ -6,12 +6,17 @@ class TextToBandViewModel: ObservableObject {
     @Published var inputText: String = ""
     @Published var notifications: [NotificationItem] = []
     @Published var selectedDate: Date = Date().addingTimeInterval(300)
+    @Published var selectedInterval: TimeInterval = 60
     @Published var isProcessing: Bool = false
     @Published var showAlert: Bool = false
     @Published var alertMessage: String = ""
+    @Published var currentHistoryItem: HistoryItem?
     
     private let notificationManager = NotificationManager.shared
-    private let settings = AppSettings.load()
+    private let historyManager = HistoryManager()
+    private let templateManager = TemplateManager()
+    private let backupManager = BackupManager()
+    private var settings = AppSettings.load()
     
     var canSendNotifications: Bool {
         !notifications.isEmpty && notifications.contains { $0.status == .pending || $0.status == .scheduled }
@@ -24,6 +29,15 @@ class TextToBandViewModel: ObservableObject {
     var estimatedNotifications: Int {
         guard !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return 0 }
         return max(1, Int(ceil(Double(totalCharacters) / Double(settings.maxCharactersPerNotification))))
+    }
+    
+    var availableIntervals: [TimeInterval] {
+        return settings.customIntervals.sorted()
+    }
+    
+    func loadTemplate(_ template: TextTemplate) {
+        inputText = template.content
+        templateManager.useTemplate(template)
     }
     
     func splitTextIntoNotifications() {
@@ -50,6 +64,13 @@ class TextToBandViewModel: ObservableObject {
                 scheduledDate: nil,
                 status: .pending,
                 localNotificationId: nil
+            )
+        }
+        
+        if settings.enableHistoryTracking {
+            currentHistoryItem = historyManager.addHistoryItem(
+                text: trimmedText,
+                notificationCount: parts.count
             )
         }
     }
@@ -90,6 +111,7 @@ class TextToBandViewModel: ObservableObject {
         guard await requestNotificationPermission() else { return }
         
         isProcessing = true
+        updateHistoryStatus(.sending)
         
         for i in notifications.indices {
             if notifications[i].status == .pending {
@@ -99,12 +121,13 @@ class TextToBandViewModel: ObservableObject {
                 }
                 
                 if i < notifications.count - 1 {
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    try? await Task.sleep(nanoseconds: UInt64(selectedInterval * 1_000_000_000))
                 }
             }
         }
         
         isProcessing = false
+        updateHistoryStatus(.sent, sentDate: Date())
         showAlert(message: "Уведомления отправлены!")
     }
     
@@ -112,11 +135,12 @@ class TextToBandViewModel: ObservableObject {
         guard await requestNotificationPermission() else { return }
         
         isProcessing = true
+        updateHistoryStatus(.sending)
         let baseDate = selectedDate
         
         for i in notifications.indices {
             if notifications[i].status == .pending {
-                let scheduledDate = baseDate.addingTimeInterval(TimeInterval(i) * settings.defaultDelayBetweenNotifications)
+                let scheduledDate = baseDate.addingTimeInterval(TimeInterval(i) * selectedInterval)
                 
                 if let identifier = await notificationManager.scheduleNotification(item: notifications[i], at: scheduledDate) {
                     notifications[i].localNotificationId = identifier
@@ -127,6 +151,7 @@ class TextToBandViewModel: ObservableObject {
         }
         
         isProcessing = false
+        updateHistoryStatus(.sent, sentDate: baseDate)
         showAlert(message: "Уведомления запланированы!")
     }
     
@@ -171,6 +196,12 @@ class TextToBandViewModel: ObservableObject {
     func clearAllNotifications() {
         notificationManager.cancelAllNotifications()
         notifications.removeAll()
+        updateHistoryStatus(.cancelled)
+    }
+    
+    private func updateHistoryStatus(_ status: HistoryItem.HistoryStatus, sentDate: Date? = nil) {
+        guard let currentItem = currentHistoryItem else { return }
+        historyManager.updateHistoryItem(currentItem, status: status, sentDate: sentDate)
     }
     
     private func requestNotificationPermission() async -> Bool {
@@ -184,5 +215,42 @@ class TextToBandViewModel: ObservableObject {
     private func showAlert(message: String) {
         alertMessage = message
         showAlert = true
+    }
+    
+    func getHistoryManager() -> HistoryManager {
+        return historyManager
+    }
+    
+    func getTemplateManager() -> TemplateManager {
+        return templateManager
+    }
+    
+    func getBackupManager() -> BackupManager {
+        return backupManager
+    }
+    
+    func exportBackup() {
+        backupManager.exportBackup(
+            settings: settings,
+            templates: templateManager.templates,
+            historyItems: historyManager.historyItems
+        )
+    }
+    
+    func importBackup(from url: URL) -> Bool {
+        guard let backupData = backupManager.importBackup(from: url),
+              backupManager.validateBackup(backupData) else {
+            showAlert(message: "Ошибка импорта резервной копии")
+            return false
+        }
+        
+        settings = backupData.settings
+        settings.save()
+        
+        templateManager.templates = backupData.templates
+        historyManager.historyItems = backupData.historyItems
+        
+        showAlert(message: "Резервная копия успешно импортирована")
+        return true
     }
 }
