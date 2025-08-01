@@ -82,10 +82,56 @@ jobs:
                    -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
                    test | xcpretty
 
-    - name: Create archive
+    - name: Create Export Options
+      run: |
+        echo "⚙️ Creating export options..."
+        cat > ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>development</string>
+            <key>teamID</key>
+            <string></string>
+            <key>compileBitcode</key>
+            <false/>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+
+    - name: Create IPA Archive
+      run: |
+        echo "📦 Creating IPA archive..."
+        
+        # Create build directory
+        mkdir -p build
+        
+        # Create archive for iOS device
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -configuration Release \
+                   -archivePath "build/TextToBand.xcarchive" \
+                   -destination 'generic/platform=iOS' \
+                   clean archive | xcpretty
+        
+        # Export IPA
+        xcodebuild -exportArchive \
+                   -archivePath "build/TextToBand.xcarchive" \
+                   -exportPath "build" \
+                   -exportOptionsPlist ExportOptions.plist | xcpretty
+        
+        # Rename IPA file
+        mv "build/TextToBand.ipa" "TextToBand-${{ steps.tag_info.outputs.version }}.ipa"
+
+    - name: Create source archive
       run: |
         echo "📦 Creating source archive..."
-        git archive --format=zip --prefix=TextToBand-${{ steps.tag_info.outputs.version }}/ HEAD > TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
+        git archive --format=zip --prefix=TextToBand-${{ steps.tag_info.outputs.version }}-source/ HEAD > TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
 
     - name: Generate release notes
       id: release_notes
@@ -94,8 +140,13 @@ jobs:
 
         ## 📱 **Установка**
         
-        Для установки приложения:
-        1. Скачайте исходный код
+        ### Для обычных пользователей:
+        1. Скачайте файл \`TextToBand-${{ steps.tag_info.outputs.version }}.ipa\`
+        2. Установите через iTunes, Xcode или сторонние инструменты (AltStore, Sideloadly)
+        3. Доверьте сертификату разработчика в Настройках → Основные → VPN и управление устройством
+        
+        ### Для разработчиков:
+        1. Скачайте исходный код \`TextToBand-${{ steps.tag_info.outputs.version }}-source.zip\`
         2. Откройте \`TextToBand.xcodeproj\` в Xcode
         3. Выберите ваше устройство или симулятор
         4. Нажмите ▶️ Run
@@ -103,8 +154,8 @@ jobs:
         ## 🛠 **Требования**
         
         - iOS 16.0+
-        - Xcode 15.0+
-        - Swift 5.9+
+        - Xcode 15.0+ (для разработчиков)
+        - Swift 5.9+ (для разработчиков)
         
         ## 🆕 **Основные возможности**
         
@@ -136,6 +187,7 @@ jobs:
         name: "Release ${{ steps.tag_info.outputs.tag_name }}"
         body: ${{ steps.release_notes.outputs.notes }}
         files: |
+          TextToBand-${{ steps.tag_info.outputs.version }}.ipa
           TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
         draft: false
         prerelease: false
