@@ -1,0 +1,188 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Get tag information
+      id: tag_info
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+        echo "version=${TAG_NAME#v}" >> $GITHUB_OUTPUT
+        
+        # Get previous tag for changelog
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        TAG_NAME=${{ steps.tag_info.outputs.tag_name }}
+        PREV_TAG=${{ steps.tag_info.outputs.prev_tag }}
+        
+        echo "📋 **Изменения в версии $TAG_NAME**" > changelog.md
+        echo "" >> changelog.md
+        
+        if [ ! -z "$PREV_TAG" ]; then
+          echo "🔄 **Коммиты с $PREV_TAG:**" >> changelog.md
+          git log --pretty=format:"- %s (%an)" $PREV_TAG..HEAD >> changelog.md
+        else
+          echo "🎉 **Первый релиз!**" >> changelog.md
+          echo "" >> changelog.md
+          echo "Это первая стабильная версия TextToBand - приложения для разбивки текста на уведомления Mi Band." >> changelog.md
+        fi
+        
+        echo "" >> changelog.md
+        echo "📊 **Статистика:**" >> changelog.md
+        echo "- Коммитов: $(git rev-list --count HEAD)" >> changelog.md
+        echo "- Swift файлов: $(find . -name '*.swift' | wc -l)" >> changelog.md
+        echo "- Строк кода: $(find . -name '*.swift' -exec wc -l {} + | tail -n1 | awk '{print $1}')" >> changelog.md
+        
+        # Read the changelog for output
+        CHANGELOG=$(cat changelog.md)
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Build for release
+      run: |
+        echo "🔨 Building release version..."
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -configuration Release \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   clean build | xcpretty
+
+    - name: Run tests
+      run: |
+        echo "🧪 Running final tests..."
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   test | xcpretty
+
+    - name: Create archive
+      run: |
+        echo "📦 Creating source archive..."
+        git archive --format=zip --prefix=TextToBand-${{ steps.tag_info.outputs.version }}/ HEAD > TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        NOTES="${{ steps.changelog.outputs.changelog }}
+
+        ## 📱 **Установка**
+        
+        Для установки приложения:
+        1. Скачайте исходный код
+        2. Откройте \`TextToBand.xcodeproj\` в Xcode
+        3. Выберите ваше устройство или симулятор
+        4. Нажмите ▶️ Run
+        
+        ## 🛠 **Требования**
+        
+        - iOS 16.0+
+        - Xcode 15.0+
+        - Swift 5.9+
+        
+        ## 🆕 **Основные возможности**
+        
+        - ✂️ Разбивка длинных текстов на уведомления
+        - 📱 Интеграция с Mi Band через уведомления iOS
+        - 📋 Шаблоны для часто используемых текстов
+        - 📚 История отправленных сообщений
+        - ⏱ Настройка интервалов между уведомлениями
+        - 💾 Экспорт и импорт настроек
+        - 🌙 Поддержка тёмной темы
+        - ⚙️ Интеграция с настройками iOS
+        
+        ## 🐛 **Нашли баг?**
+        
+        Сообщите о проблеме в [Issues](https://github.com/OrDinaD/TextToBand/issues/new?template=bug_report.md)
+        
+        ## 💡 **Есть идея?**
+        
+        Предложите новую функцию в [Issues](https://github.com/OrDinaD/TextToBand/issues/new?template=feature_request.md)"
+        
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag_info.outputs.tag_name }}
+        name: "Release ${{ steps.tag_info.outputs.tag_name }}"
+        body: ${{ steps.release_notes.outputs.notes }}
+        files: |
+          TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
+        draft: false
+        prerelease: false
+        make_latest: true
+
+    - name: Update CHANGELOG.md
+      run: |
+        # Add new version to CHANGELOG.md
+        TODAY=$(date '+%Y-%m-%d')
+        
+        # Create new changelog entry
+        echo "## [${{ steps.tag_info.outputs.version }}] - $TODAY" > new_entry.md
+        echo "" >> new_entry.md
+        echo "${{ steps.changelog.outputs.changelog }}" >> new_entry.md
+        echo "" >> new_entry.md
+        
+        # Prepend to existing CHANGELOG.md (after the header)
+        if [ -f CHANGELOG.md ]; then
+          # Keep header and add new entry
+          head -n 7 CHANGELOG.md > temp_changelog.md
+          cat new_entry.md >> temp_changelog.md
+          tail -n +8 CHANGELOG.md >> temp_changelog.md
+          mv temp_changelog.md CHANGELOG.md
+        else
+          # Create new CHANGELOG.md
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Все значимые изменения в проекте документируются в этом файле." >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/)," >> CHANGELOG.md
+          echo "и этот проект следует [Semantic Versioning](https://semver.org/lang/ru/)." >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          cat new_entry.md >> CHANGELOG.md
+        fi
+        
+        rm new_entry.md
+
+    - name: Commit updated CHANGELOG
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add CHANGELOG.md
+        git commit -m "docs: update CHANGELOG for ${{ steps.tag_info.outputs.tag_name }}" || exit 0
+        git push origin HEAD:main
+
+    - name: Notify release
+      run: |
+        echo "🎉 Релиз ${{ steps.tag_info.outputs.tag_name }} успешно создан!"
+        echo "📦 Архив: TextToBand-${{ steps.tag_info.outputs.version }}-source.zip"
+        echo "🔗 Ссылка: https://github.com/OrDinaD/TextToBand/releases/tag/${{ steps.tag_info.outputs.tag_name }}"

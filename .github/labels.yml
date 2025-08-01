@@ -1,0 +1,136 @@
+# GitHub Labels Configuration
+
+# Тип задач
+- name: "🐛 bug"
+  color: "d73a4a"
+  description: "Что-то работает не так"
+
+- name: "✨ enhancement"
+  color: "a2eeef"
+  description: "Новая функция или улучшение"
+
+- name: "📚 documentation"
+  color: "0075ca"
+  description: "Улучшения или дополнения к документации"
+
+- name: "❓ question"
+  color: "d876e3"
+  description: "Дополнительная информация запрошена"
+
+- name: "🧹 refactor"
+  color: "fbca04"
+  description: "Рефакторинг кода"
+
+- name: "🧪 tests"
+  color: "1d76db"
+  description: "Добавление или исправление тестов"
+
+# Приоритет
+- name: "🔥 priority: high"
+  color: "b60205"
+  description: "Высокий приоритет"
+
+- name: "⚠️ priority: medium"
+  color: "fbca04"
+  description: "Средний приоритет"
+
+- name: "📝 priority: low"
+  color: "0e8a16"
+  description: "Низкий приоритет"
+
+# Сложность
+- name: "🟢 good first issue"
+  color: "7057ff"
+  description: "Хорошая задача для новичков"
+
+- name: "🔵 easy"
+  color: "c2e0c6"
+  description: "Простая задача"
+
+- name: "🟡 medium"
+  color: "fef2c0"
+  description: "Задача средней сложности"
+
+- name: "🔴 hard"
+  color: "f9d0c4"
+  description: "Сложная задача"
+
+# Статус
+- name: "🚧 in progress"
+  color: "fbca04"
+  description: "В разработке"
+
+- name: "⏸️ on hold"
+  color: "d4c5f9"
+  description: "Временно приостановлено"
+
+- name: "✅ ready for review"
+  color: "0e8a16"
+  description: "Готово к ревью"
+
+- name: "❌ blocked"
+  color: "b60205"
+  description: "Заблокировано"
+
+# Области
+- name: "📱 ui/ux"
+  color: "ff69b4"
+  description: "Пользовательский интерфейс и опыт"
+
+- name: "⚙️ backend"
+  color: "1f77b4"
+  description: "Серверная логика"
+
+- name: "📊 data"
+  color: "ff7f0e"
+  description: "Работа с данными"
+
+- name: "🔔 notifications"
+  color: "2ca02c"
+  description: "Система уведомлений"
+
+- name: "⚡ performance"
+  color: "ff1744"
+  description: "Производительность"
+
+- name: "🔒 security"
+  color: "795548"
+  description: "Безопасность"
+
+# Платформа
+- name: "🍎 ios"
+  color: "007aff"
+  description: "Специфично для iOS"
+
+- name: "⌚ miband"
+  color: "ff9500"
+  description: "Интеграция с Mi Band"
+
+- name: "📱 swift"
+  color: "fa7343"
+  description: "Swift код"
+
+- name: "🎨 swiftui"
+  color: "007aff"
+  description: "SwiftUI интерфейс"
+
+# Управление
+- name: "🏷️ needs triage"
+  color: "ededed"
+  description: "Требует анализа"
+
+- name: "🔄 duplicate"
+  color: "cfd3d7"
+  description: "Дубликат"
+
+- name: "❌ wontfix"
+  color: "ffffff"
+  description: "Не будет исправлено"
+
+- name: "❌ invalid"
+  color: "e4e669"
+  description: "Некорректная задача"
+
+- name: "❤️ help wanted"
+  color: "008672"
+  description: "Нужна помощь сообщества"

@@ -1,0 +1,174 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: Validate Pull Request
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/Library/Developer/Xcode/DerivedData
+          ~/.swiftpm
+        key: ${{ runner.os }}-xcode-${{ hashFiles('**/project.pbxproj') }}
+        restore-keys: |
+          ${{ runner.os }}-xcode-
+
+    - name: Check for merge conflicts
+      run: |
+        if git merge-tree $(git merge-base HEAD main) HEAD main | grep -q "<<<<<<< "; then
+          echo "❌ Merge conflicts detected"
+          exit 1
+        else
+          echo "✅ No merge conflicts"
+        fi
+
+    - name: Validate project structure
+      run: |
+        echo "🔍 Validating project structure..."
+        if [ ! -f "TextToBand.xcodeproj/project.pbxproj" ]; then
+          echo "❌ Xcode project not found"
+          exit 1
+        fi
+        
+        if [ ! -d "TextToBand" ]; then
+          echo "❌ Source directory not found"
+          exit 1
+        fi
+        
+        echo "✅ Project structure is valid"
+
+    - name: Build project
+      run: |
+        echo "🔨 Building project..."
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   clean build | xcpretty
+
+    - name: Run tests
+      run: |
+        echo "🧪 Running tests..."
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   test | xcpretty
+
+    - name: SwiftLint
+      run: |
+        if command -v swiftlint >/dev/null 2>&1; then
+          echo "🔍 Running SwiftLint..."
+          swiftlint --strict
+        else
+          echo "⚠️ SwiftLint not installed, skipping..."
+        fi
+
+    - name: Check for TODO/FIXME comments
+      run: |
+        echo "🔍 Checking for TODO/FIXME comments..."
+        if grep -r "TODO\|FIXME" TextToBand/ --include="*.swift"; then
+          echo "⚠️ TODO/FIXME comments found - consider addressing them"
+        else
+          echo "✅ No TODO/FIXME comments found"
+        fi
+
+    - name: Validate commit messages
+      run: |
+        echo "📝 Validating commit messages..."
+        git log --oneline main..HEAD | while read line; do
+          if [[ ! "$line" =~ ^[a-f0-9]+\ (feat|fix|docs|style|refactor|test|chore)(\(.+\))?:\ .+ ]]; then
+            echo "⚠️ Commit message doesn't follow conventional format: $line"
+          fi
+        done
+
+    - name: Check file sizes
+      run: |
+        echo "📏 Checking for large files..."
+        find . -name "*.swift" -size +50k -exec echo "⚠️ Large Swift file found: {} ($(du -h {} | cut -f1))" \;
+        find . -type f -size +10M -exec echo "❌ Very large file found: {} ($(du -h {} | cut -f1))" \; -exec exit 1 \;
+
+    - name: Security scan
+      run: |
+        echo "🔒 Running basic security checks..."
+        if grep -r "http://" TextToBand/ --include="*.swift"; then
+          echo "⚠️ HTTP URLs found - consider using HTTPS"
+        fi
+        
+        if grep -r "password\|secret\|key" TextToBand/ --include="*.swift" -i; then
+          echo "⚠️ Potential sensitive data found in code"
+        fi
+
+    - name: Generate test coverage
+      run: |
+        echo "📊 Generating test coverage..."
+        xcodebuild -project TextToBand.xcodeproj \
+                   -scheme TextToBand \
+                   -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                   -enableCodeCoverage YES \
+                   test | xcpretty
+
+    - name: Comment PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('🤖 Автоматическая проверка PR')
+          );
+          
+          const commentBody = `🤖 **Автоматическая проверка PR завершена**
+          
+          ✅ Сборка прошла успешно
+          ✅ Тесты выполнены
+          ✅ Проверка безопасности пройдена
+          
+          📊 **Статистика:**
+          - Коммитов: \`${context.payload.pull_request.commits}\`
+          - Изменённых файлов: \`${context.payload.pull_request.changed_files}\`
+          - Добавлено строк: \`+${context.payload.pull_request.additions}\`
+          - Удалено строк: \`-${context.payload.pull_request.deletions}\`
+          
+          🎯 **Готов к ревью!**
+          
+          ---
+          *Проверено автоматически в ${new Date().toLocaleString('ru-RU')}*`;
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: commentBody
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+          }

@@ -1,0 +1,22 @@
+name: Setup Repository Labels
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/labels.yml'
+
+jobs:
+  labels:
+    name: Setup Labels
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Labels
+      uses: crazy-max/ghaction-github-labeler@v4
+      with:
+        yaml-file: .github/labels.yml
