@@ -10,6 +10,7 @@ struct HistoryItem: Identifiable, Codable {
     
     enum HistoryStatus: String, CaseIterable, Codable {
         case draft = "draft"
+        case pending = "pending"
         case sending = "sending" 
         case sent = "sent"
         case cancelled = "cancelled"
@@ -18,6 +19,8 @@ struct HistoryItem: Identifiable, Codable {
             switch self {
             case .draft:
                 return "Черновик"
+            case .pending:
+                return "Ожидает"
             case .sending:
                 return "Отправляется"
             case .sent:
@@ -31,6 +34,8 @@ struct HistoryItem: Identifiable, Codable {
             switch self {
             case .draft:
                 return "gray"
+            case .pending:
+                return "blue"
             case .sending:
                 return "orange"
             case .sent:

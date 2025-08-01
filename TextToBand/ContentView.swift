@@ -3,15 +3,11 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = TextToBandViewModel()
     @State private var showDatePicker = false
-    @State private var showingHistory = false
-    @State private var showingTemplates = false
-    @State private var showingSettings = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    quickActionsSection
                     inputSection
                     actionSection
                     notificationsSection
@@ -20,13 +16,6 @@ struct ContentView: View {
             }
             .navigationTitle("TextToBand")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Настройки") {
-                        showingSettings = true
-                    }
-                }
-            }
             .alert("Уведомление", isPresented: $viewModel.showAlert) {
                 Button("OK") { }
             } message: {
@@ -35,45 +24,8 @@ struct ContentView: View {
             .sheet(isPresented: $showDatePicker) {
                 datePickerSheet
             }
-            .sheet(isPresented: $showingHistory) {
-                HistoryView()
-            }
-            .sheet(isPresented: $showingTemplates) {
-                TemplatesView { template in
-                    applyTemplate(template)
-                }
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
-    }
-    
-    private var quickActionsSection: some View {
-        HStack(spacing: 12) {
-            Button("История") {
-                showingHistory = true
-            }
-            .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
-            
-            Button("Шаблоны") {
-                showingTemplates = true
-            }
-            .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
-            
-            Button("Экспорт") {
-                viewModel.exportBackup()
-            }
-            .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
-        }
-        .padding(16)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
     
     private var inputSection: some View {
@@ -240,10 +192,6 @@ struct ContentView: View {
                 }
             )
         }
-    
-    private func applyTemplate(_ template: TextTemplate) {
-        viewModel.inputText = template.content
-        showingTemplates = false
     }
 }
 
