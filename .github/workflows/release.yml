@@ -84,7 +84,7 @@ jobs:
 
     - name: Create Export Options
       run: |
-        echo "⚙️ Creating export options..."
+        echo "⚙️ Creating export options for local builds..."
         cat > ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -104,34 +104,46 @@ jobs:
         </plist>
         EOF
 
-    - name: Create IPA Archive
-      run: |
-        echo "📦 Creating IPA archive..."
-        
-        # Create build directory
-        mkdir -p build
-        
-        # Create archive for iOS device
-        xcodebuild -project TextToBand.xcodeproj \
-                   -scheme TextToBand \
-                   -configuration Release \
-                   -archivePath "build/TextToBand.xcarchive" \
-                   -destination 'generic/platform=iOS' \
-                   clean archive | xcpretty
-        
-        # Export IPA
-        xcodebuild -exportArchive \
-                   -archivePath "build/TextToBand.xcarchive" \
-                   -exportPath "build" \
-                   -exportOptionsPlist ExportOptions.plist | xcpretty
-        
-        # Rename IPA file
-        mv "build/TextToBand.ipa" "TextToBand-${{ steps.tag_info.outputs.version }}.ipa"
-
     - name: Create source archive
       run: |
-        echo "📦 Creating source archive..."
+        echo "📦 Creating source archive with build tools..."
         git archive --format=zip --prefix=TextToBand-${{ steps.tag_info.outputs.version }}-source/ HEAD > TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
+        
+        # Create build instructions
+        cat > BUILD_IPA.md << EOF
+        # 📱 Сборка IPA файла
+        
+        ## Требования
+        - macOS с Xcode 15.0+
+        - Apple Developer аккаунт (для подписи)
+        
+        ## Инструкции
+        
+        1. Откройте TextToBand.xcodeproj в Xcode
+        2. Выберите ваш Team в настройках Signing & Capabilities
+        3. Выполните команды:
+        
+        \`\`\`bash
+        # Создание архива
+        xcodebuild -project TextToBand.xcodeproj \\
+                   -scheme TextToBand \\
+                   -configuration Release \\
+                   -archivePath "TextToBand.xcarchive" \\
+                   -destination 'generic/platform=iOS' \\
+                   clean archive
+        
+        # Экспорт IPA
+        xcodebuild -exportArchive \\
+                   -archivePath "TextToBand.xcarchive" \\
+                   -exportPath "." \\
+                   -exportOptionsPlist ExportOptions.plist
+        \`\`\`
+        
+        4. Получите файл TextToBand.ipa для установки
+        EOF
+        
+        # Add build instructions to archive
+        zip -u TextToBand-${{ steps.tag_info.outputs.version }}-source.zip BUILD_IPA.md ExportOptions.plist
 
     - name: Generate release notes
       id: release_notes
@@ -140,10 +152,11 @@ jobs:
 
         ## 📱 **Установка**
         
-        ### Для обычных пользователей:
-        1. Скачайте файл \`TextToBand-${{ steps.tag_info.outputs.version }}.ipa\`
-        2. Установите через iTunes, Xcode или сторонние инструменты (AltStore, Sideloadly)
-        3. Доверьте сертификату разработчика в Настройках → Основные → VPN и управление устройством
+        ### Создание IPA файла:
+        1. Скачайте исходный код \`TextToBand-${{ steps.tag_info.outputs.version }}-source.zip\`
+        2. Распакуйте архив
+        3. Следуйте инструкциям в файле \`BUILD_IPA.md\` для создания IPA
+        4. Установите созданный IPA через iTunes, Xcode или сторонние инструменты
         
         ### Для разработчиков:
         1. Скачайте исходный код \`TextToBand-${{ steps.tag_info.outputs.version }}-source.zip\`
@@ -154,7 +167,8 @@ jobs:
         ## 🛠 **Требования**
         
         - iOS 16.0+
-        - Xcode 15.0+ (для разработчиков)
+        - Xcode 15.0+ (для сборки IPA и разработки)
+        - Apple Developer аккаунт (для подписи IPA)
         - Swift 5.9+ (для разработчиков)
         
         ## 🆕 **Основные возможности**
@@ -187,7 +201,6 @@ jobs:
         name: "Release ${{ steps.tag_info.outputs.tag_name }}"
         body: ${{ steps.release_notes.outputs.notes }}
         files: |
-          TextToBand-${{ steps.tag_info.outputs.version }}.ipa
           TextToBand-${{ steps.tag_info.outputs.version }}-source.zip
         draft: false
         prerelease: false
