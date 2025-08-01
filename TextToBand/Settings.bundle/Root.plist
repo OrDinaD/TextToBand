@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Настройки уведомлений</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Символов в уведомлении</string>
+			<key>Key</key>
+			<string>maxCharactersPerNotification</string>
+			<key>DefaultValue</key>
+			<string>100</string>
+			<key>KeyboardType</key>
+			<string>NumberPad</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSSliderSpecifier</string>
+			<key>Title</key>
+			<string>Задержка между уведомлениями (сек)</string>
+			<key>Key</key>
+			<string>defaultDelayBetweenNotifications</string>
+			<key>DefaultValue</key>
+			<real>60</real>
+			<key>MinimumValue</key>
+			<real>10</real>
+			<key>MaximumValue</key>
+			<real>300</real>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Префикс заголовка</string>
+			<key>Key</key>
+			<string>notificationTitlePrefix</string>
+			<key>DefaultValue</key>
+			<string>Уведомление</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>О приложении</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTitleValueSpecifier</string>
+			<key>Title</key>
+			<string>Версия</string>
+			<key>Key</key>
+			<string>version</string>
+			<key>DefaultValue</key>
+			<string>1.0</string>
+		</dict>
+	</array>
+</dict>
+</plist>

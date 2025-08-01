@@ -29,9 +29,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F52809112E3D1769009D0B7A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
 		F5D731B42E3CE84F00D39A99 = {
 			isa = PBXGroup;
 			children = (
+				F52809112E3D1769009D0B7A /* Core */,
 				F5D731BF2E3CE84F00D39A99 /* TextToBand */,
 				F5D731BE2E3CE84F00D39A99 /* Products */,
 			);
@@ -256,6 +264,7 @@
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +293,7 @@
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
