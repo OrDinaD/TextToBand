@@ -20,10 +20,11 @@ class TemplateManager: ObservableObject {
     
     private let userDefaults = UserDefaults.standard
     private let templatesKey = "TextToBandTemplates"
+    private let hasCreatedDefaultsKey = "TextToBandHasCreatedDefaultTemplates"
     
     init() {
         loadTemplates()
-        createDefaultTemplates()
+        createDefaultTemplatesIfNeeded()
     }
     
     func addTemplate(name: String, content: String) {
@@ -52,18 +53,22 @@ class TemplateManager: ObservableObject {
         }
     }
     
-    private func createDefaultTemplates() {
-        guard templates.isEmpty else { return }
+    private func createDefaultTemplatesIfNeeded() {
+        // Создаем шаблоны по умолчанию только если они никогда не создавались
+        let hasCreatedDefaults = userDefaults.bool(forKey: hasCreatedDefaultsKey)
         
-        let defaultTemplates = [
-            TextTemplate(name: "Встреча", content: "Напоминание о встрече в [время] по адресу [адрес]. Не забудьте взять с собой документы."),
-            TextTemplate(name: "Лекарство", content: "Время принять лекарство [название]. Дозировка: [дозировка]. Следующий прием через [время]."),
-            TextTemplate(name: "Тренировка", content: "Время тренировки! Сегодня в программе: [упражнения]. Не забудьте взять воду и полотенце."),
-            TextTemplate(name: "Покупки", content: "Список покупок: [список]. Не забудьте проверить скидки и акции в магазине.")
-        ]
-        
-        templates = defaultTemplates
-        saveTemplates()
+        if !hasCreatedDefaults && templates.isEmpty {
+            let defaultTemplates = [
+                TextTemplate(name: "Встреча", content: "Напоминание о встрече в [время] по адресу [адрес]. Не забудьте взять с собой документы."),
+                TextTemplate(name: "Лекарство", content: "Время принять лекарство [название]. Дозировка: [дозировка]. Следующий прием через [время]."),
+                TextTemplate(name: "Тренировка", content: "Время тренировки! Сегодня в программе: [упражнения]. Не забудьте взять воду и полотенце."),
+                TextTemplate(name: "Покупки", content: "Список покупок: [список]. Не забудьте проверить скидки и акции в магазине.")
+            ]
+            
+            templates = defaultTemplates
+            saveTemplates()
+            userDefaults.set(true, forKey: hasCreatedDefaultsKey)
+        }
     }
     
     private func loadTemplates() {

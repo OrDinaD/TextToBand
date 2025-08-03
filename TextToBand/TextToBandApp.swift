@@ -1,36 +1,106 @@
 import SwiftUI
 import UserNotifications
+import OSLog
 
 @main
 struct TextToBandApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
+    
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TextToBand", category: "App")
+    
+    init() {
+        setupAppConfiguration()
+    }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    setupDefaultSettings()
+                .environmentObject(AppStateManager.shared)
+                .task {
+                    await setupApp()
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    handleScenePhaseChange(newPhase)
                 }
         }
     }
     
-    private func setupDefaultSettings() {
-        let defaults = UserDefaults.standard
+    private func setupAppConfiguration() {
+        // Configure app-wide settings
+        configureAppearance()
+        configureDefaultSettings()
+    }
+    
+    private func configureAppearance() {
+        // Modern iOS appearance configuration
+        let navBarAppearance = UINavigationBarAppearance()
+        navBarAppearance.configureWithOpaqueBackground()
+        navBarAppearance.backgroundColor = UIColor.systemBackground
+        navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor.label]
+        navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
         
-        if defaults.object(forKey: "maxCharactersPerNotification") == nil {
-            defaults.set(100, forKey: "maxCharactersPerNotification")
+        UINavigationBar.appearance().standardAppearance = navBarAppearance
+        UINavigationBar.appearance().compactAppearance = navBarAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
+        
+        // Configure tab bar appearance
+        let tabBarAppearance = UITabBarAppearance()
+        tabBarAppearance.configureWithOpaqueBackground()
+        UITabBar.appearance().standardAppearance = tabBarAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
+    }
+    
+    private func configureDefaultSettings() {
+        UserDefaults.standard.register(defaults: [
+            "maxCharactersPerNotification": 100,
+            "defaultDelayBetweenNotifications": 60.0,
+            "notificationTitlePrefix": "Уведомление",
+            "version": "2.0.0",
+            "enableHapticFeedback": true,
+            "enableSmartSplitting": true,
+            "preferredTheme": "system"
+        ])
+    }
+    
+    @MainActor
+    private func setupApp() async {
+        logger.info("Setting up app...")
+        
+        do {
+            // Request notification permissions
+            try await requestNotificationPermissions()
+            
+            // Initialize app state
+            await AppStateManager.shared.initialize()
+            
+            logger.info("App setup completed successfully")
+        } catch {
+            logger.error("Failed to setup app: \(error.localizedDescription)")
         }
-        
-        if defaults.object(forKey: "defaultDelayBetweenNotifications") == nil {
-            defaults.set(60.0, forKey: "defaultDelayBetweenNotifications")
-        }
-        
-        if defaults.object(forKey: "notificationTitlePrefix") == nil {
-            defaults.set("Уведомление", forKey: "notificationTitlePrefix")
-        }
-        
-        if defaults.object(forKey: "version") == nil {
-            defaults.set("1.0", forKey: "version")
+    }
+    
+    private func requestNotificationPermissions() async throws {
+        let options: UNAuthorizationOptions = [.alert, .badge, .sound, .provisional, .criticalAlert]
+        _ = try await UNUserNotificationCenter.current().requestAuthorization(options: options)
+    }
+    
+    private func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .active:
+            logger.debug("App became active")
+            Task { @MainActor in
+                await AppStateManager.shared.refreshActiveState()
+            }
+        case .inactive:
+            logger.debug("App became inactive")
+        case .background:
+            logger.debug("App entered background")
+            Task {
+                await AppStateManager.shared.saveState()
+            }
+        @unknown default:
+            break
         }
     }
 }

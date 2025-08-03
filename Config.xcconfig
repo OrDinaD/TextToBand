@@ -1,0 +1,13 @@
+// Configuration for TextToBand
+// Copy this file to LocalConfig.xcconfig and set your team ID
+
+// Set your development team ID here
+DEVELOPMENT_TEAM = 
+
+// Code signing settings
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = iPhone Developer
+PROVISIONING_PROFILE_SPECIFIER = 
+
+// Bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = com.yourteam.TextToBand

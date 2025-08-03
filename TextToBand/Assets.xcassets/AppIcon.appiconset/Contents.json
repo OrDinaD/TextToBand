@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "ChatGPT Image 1 авг. 2025 г., 20_59_56 (фон удален).png",
+      "filename" : "Иконка для приложения 3 авг 2025.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "Иконка для приложения 3 авг 2025 (1) (фон удален).png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -24,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "Иконка для приложения 3 авг 2025 (2).png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

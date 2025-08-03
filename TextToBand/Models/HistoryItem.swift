@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct HistoryItem: Identifiable, Codable {
     var id = UUID()
@@ -30,18 +31,18 @@ struct HistoryItem: Identifiable, Codable {
             }
         }
         
-        var color: String {
+        var color: Color {
             switch self {
             case .draft:
-                return "gray"
+                return .gray
             case .pending:
-                return "blue"
+                return .blue
             case .sending:
-                return "orange"
+                return .orange
             case .sent:
-                return "green"
+                return .green
             case .cancelled:
-                return "red"
+                return .red
             }
         }
     }

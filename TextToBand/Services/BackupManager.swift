@@ -23,7 +23,8 @@ class BackupManager: ObservableObject {
     @Published var showShareSheet = false
     @Published var backupFileURL: URL?
     
-    func exportBackup(settings: AppSettings, templates: [TextTemplate], historyItems: [HistoryItem]) {
+    @MainActor
+    func exportBackup(settings: AppSettings, templates: [TextTemplate], historyItems: [HistoryItem]) async -> URL? {
         isExporting = true
         
         let backupData = BackupData(
@@ -44,14 +45,13 @@ class BackupManager: ObservableObject {
             
             try data.write(to: fileURL)
             
-            DispatchQueue.main.async {
-                self.backupFileURL = fileURL
-                self.showShareSheet = true
-                self.isExporting = false
-            }
+            self.backupFileURL = fileURL
+            self.isExporting = false
+            return fileURL
         } catch {
             print("Ошибка экспорта: \(error)")
             isExporting = false
+            return nil
         }
     }
     
@@ -69,7 +69,58 @@ class BackupManager: ObservableObject {
     }
     
     func validateBackup(_ backup: BackupData) -> Bool {
-        return !backup.templates.isEmpty || !backup.historyItems.isEmpty
+        // Проверяем версию приложения
+        guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else {
+            print("Не удалось получить текущую версию приложения")
+            return false
+        }
+        
+        // Проверяем совместимость версий (можно импортировать из той же или более старой версии)
+        let backupVersionComponents = backup.appVersion.components(separatedBy: ".").compactMap { Int($0) }
+        let currentVersionComponents = currentVersion.components(separatedBy: ".").compactMap { Int($0) }
+        
+        if backupVersionComponents.count >= 2 && currentVersionComponents.count >= 2 {
+            let backupMajor = backupVersionComponents[0]
+            let backupMinor = backupVersionComponents[1]
+            let currentMajor = currentVersionComponents[0]
+            let currentMinor = currentVersionComponents[1]
+            
+            // Проверяем, что major версия не больше текущей
+            if backupMajor > currentMajor {
+                print("Резервная копия создана в более новой версии приложения")
+                return false
+            }
+        }
+        
+        // Проверяем структуру данных
+        if backup.templates.isEmpty && backup.historyItems.isEmpty {
+            print("Резервная копия не содержит данных")
+            return false
+        }
+        
+        // Проверяем целостность шаблонов
+        for template in backup.templates {
+            if template.name.isEmpty || template.content.isEmpty {
+                print("Найден некорректный шаблон в резервной копии")
+                return false
+            }
+        }
+        
+        // Проверяем целостность истории
+        for item in backup.historyItems {
+            if item.originalText.isEmpty {
+                print("Найден некорректный элемент истории в резервной копии")
+                return false
+            }
+        }
+        
+        // Проверяем дату экспорта (не должна быть в будущем)
+        if backup.exportDate > Date() {
+            print("Некорректная дата экспорта в резервной копии")
+            return false
+        }
+        
+        return true
     }
 }
 

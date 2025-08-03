@@ -13,6 +13,22 @@ final class TextToBandUITests: XCTestCase {
         app = nil
     }
     
+    /// Ожидание появления элемента с использованием XCTNSPredicateExpectation
+    private func waitForElement(_ element: XCUIElement, timeout: TimeInterval = 10) -> Bool {
+        let predicate = NSPredicate(format: "exists == true")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed
+    }
+    
+    /// Ожидание исчезновения элемента
+    private func waitForElementToDisappear(_ element: XCUIElement, timeout: TimeInterval = 10) -> Bool {
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        return result == .completed
+    }
+    
     func testMainScreenElements() throws {
         // Проверяем основные элементы главного экрана
         XCTAssertTrue(app.staticTexts["TextToBand"].exists)
@@ -43,8 +59,32 @@ final class TextToBandUITests: XCTestCase {
         sendButton.tap()
         
         // После отправки должна появиться кнопка отмены
-        XCTAssertTrue(app.buttons["Отменить отправку"].waitForExistence(timeout: 2))
+        let cancelButton = app.buttons["Отменить отправку"]
+        XCTAssertTrue(waitForElement(cancelButton))
     }
+    
+    func testHistoryNavigation() throws {
+        let historyButton = app.buttons["История"]
+        historyButton.tap()
+        
+        let historyNavigationBar = app.navigationBars["История"]
+        XCTAssertTrue(waitForElement(historyNavigationBar))
+    }
+    
+    func testTemplatesNavigation() throws {
+        let templatesButton = app.buttons["Шаблоны"]
+        templatesButton.tap()
+        
+        let templatesNavigationBar = app.navigationBars["Шаблоны"]
+        XCTAssertTrue(waitForElement(templatesNavigationBar))
+    }
+    
+    func testSettingsNavigation() throws {
+        let settingsButton = app.buttons["Настройки"]
+        settingsButton.tap()
+        
+        let settingsNavigationBar = app.navigationBars["Настройки"]
+        XCTAssertTrue(waitForElement(settingsNavigationBar))
     
     func testHistoryNavigation() throws {
         let historyButton = app.buttons["История"]
@@ -136,7 +176,7 @@ final class TextToBandUITests: XCTestCase {
         
         // Ждем появления кнопки отмены
         let cancelButton = app.buttons["Отменить отправку"]
-        XCTAssertTrue(cancelButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(waitForElement(cancelButton))
         
         // Отменяем отправку
         cancelButton.tap()

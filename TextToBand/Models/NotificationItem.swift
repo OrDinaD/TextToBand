@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct NotificationItem: Identifiable, Codable {
     var id = UUID()
@@ -41,16 +42,16 @@ enum NotificationStatus: String, CaseIterable, Codable {
         }
     }
     
-    var color: String {
+    var color: Color {
         switch self {
         case .pending:
-            return "blue"
+            return .blue
         case .scheduled:
-            return "orange"
+            return .orange
         case .sent:
-            return "green"
+            return .green
         case .cancelled:
-            return "gray"
+            return .gray
         }
     }
 }

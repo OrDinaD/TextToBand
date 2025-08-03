@@ -131,12 +131,14 @@ struct SettingsView: View {
             
             if viewModel.enableBackup {
                 Button("Экспортировать настройки") {
-                    viewModel.exportSettings { url in
-                        if url != nil {
+                    Task {
+                        await viewModel.exportSettings()
+                        if viewModel.backupFileURL != nil {
                             showingShareSheet = true
                         }
                     }
                 }
+                .disabled(viewModel.isExporting)
                 
                 Button("Импортировать настройки") {
                     showingImportPicker = true
@@ -182,6 +184,7 @@ class SettingsViewModel: ObservableObject {
     @Published var maxTemplates: Int = 50
     @Published var enableBackup: Bool = true
     @Published var backupFileURL: URL?
+    @Published var isExporting: Bool = false
     
     private var settings = AppSettings.load()
     private let backupManager = BackupManager()
@@ -238,22 +241,22 @@ class SettingsViewModel: ObservableObject {
         }
     }
     
-    func exportSettings(completion: @escaping (URL?) -> Void) {
+    func exportSettings() async {
         saveSettings()
+        isExporting = true
         
         let historyManager = HistoryManager()
         let templateManager = TemplateManager()
         
-        backupManager.exportBackup(
+        if let fileURL = await backupManager.exportBackup(
             settings: settings,
             templates: templateManager.templates,
             historyItems: historyManager.historyItems
-        )
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.backupFileURL = self.backupManager.backupFileURL
-            completion(self.backupFileURL)
+        ) {
+            self.backupFileURL = fileURL
         }
+        
+        isExporting = false
     }
     
     func handleImport(_ result: Result<[URL], Error>) {

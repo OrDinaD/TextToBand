@@ -64,7 +64,7 @@ struct HistoryItemRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Circle()
-                            .fill(Color(item.status.color))
+                            .fill(item.status.color)
                             .frame(width: 8, height: 8)
                         
                         Text(item.status.displayName)

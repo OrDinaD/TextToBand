@@ -48,6 +48,9 @@ playground.xcworkspace
 
 .build/
 
+# Local Configuration Files
+LocalConfig.xcconfig
+
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However
@@ -56,8 +59,9 @@ playground.xcworkspace
 #
 # Pods/
 #
-# Add this line if you want to avoid checking in source code from the Xcode workspace
-# *.xcworkspace
+# Add this line if you want to avoid checking in source code from the CocoaPod's
+# hence it is not needed unless you have added a pod in your project
+# .xcworkspace
 
 # Carthage
 #
@@ -75,7 +79,7 @@ Dependencies/
 # It is recommended to not store the screenshots in the git repo.
 # Instead, use fastlane to re-generate the screenshots whenever they are needed.
 # For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
+# https://docs.fastlane.tools/best-practices/source-control/#source-control
 
 fastlane/report.xml
 fastlane/Preview.html
@@ -88,6 +92,34 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
+
+## General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Icon must end with two 
+Icon
+
+
+## Thumbnails
+._*
+
+## Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+## Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
 # macOS
 .DS_Store

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import OSLog
 
 @MainActor
 class TextToBandViewModel: ObservableObject {
@@ -12,6 +13,7 @@ class TextToBandViewModel: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var currentHistoryItem: HistoryItem?
     
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "TextToBand", category: "ViewModel")
     private let notificationManager = NotificationManager.shared
     private let historyManager = HistoryManager()
     private let templateManager = TemplateManager()
@@ -33,6 +35,12 @@ class TextToBandViewModel: ObservableObject {
     
     var availableIntervals: [TimeInterval] {
         return settings.customIntervals.sorted()
+    }
+    
+    func refresh() async {
+        logger.debug("Refreshing view model state")
+        await notificationManager.initialize()
+        settings = AppSettings.load()
     }
     
     func loadTemplate(_ template: TextTemplate) {
@@ -113,22 +121,26 @@ class TextToBandViewModel: ObservableObject {
         isProcessing = true
         updateHistoryStatus(.sending)
         
+        let baseDate = Date()
+        
         for i in notifications.indices {
             if notifications[i].status == .pending {
-                if let identifier = await notificationManager.sendImmediateNotification(item: notifications[i]) {
-                    notifications[i].localNotificationId = identifier
-                    notifications[i].status = .sent
-                }
+                let scheduledDate = baseDate.addingTimeInterval(TimeInterval(Double(i) * selectedInterval))
+                notifications[i].scheduledDate = scheduledDate
                 
-                if i < notifications.count - 1 {
-                    try? await Task.sleep(nanoseconds: UInt64(selectedInterval * 1_000_000_000))
+                if let identifier = await notificationManager.scheduleNotification(
+                    item: notifications[i],
+                    at: scheduledDate
+                ) {
+                    notifications[i].localNotificationId = identifier
+                    notifications[i].status = .scheduled
                 }
             }
         }
         
         isProcessing = false
-        updateHistoryStatus(.sent, sentDate: Date())
-        showAlert(message: "Уведомления отправлены!")
+        updateHistoryStatus(.pending) // Статус "ожидает" до отправки всех уведомлений
+        showAlert(message: "Уведомления запланированы!")
     }
     
     func scheduleNotifications() async {
@@ -155,11 +167,11 @@ class TextToBandViewModel: ObservableObject {
         showAlert(message: "Уведомления запланированы!")
     }
     
-    func cancelNotification(at index: Int) {
+    func cancelNotification(at index: Int) async {
         guard index < notifications.count else { return }
         
         if let identifier = notifications[index].localNotificationId {
-            notificationManager.cancelNotification(identifier: identifier)
+            await notificationManager.cancelNotification(identifier: identifier)
         }
         
         notifications[index].status = .cancelled
@@ -167,15 +179,18 @@ class TextToBandViewModel: ObservableObject {
         notifications[index].scheduledDate = nil
     }
     
-    func removeNotification(at index: Int) {
+    func removeNotification(at index: Int) async {
         guard index < notifications.count else { return }
         
         if let identifier = notifications[index].localNotificationId {
-            notificationManager.cancelNotification(identifier: identifier)
+            await notificationManager.cancelNotification(identifier: identifier)
         }
         
         notifications.remove(at: index)
-        
+        updatePartNumbers()
+    }
+    
+    private func updatePartNumbers() {
         for i in notifications.indices {
             notifications[i] = NotificationItem(
                 partNumber: i + 1,
@@ -193,8 +208,8 @@ class TextToBandViewModel: ObservableObject {
         notifications[index].content = newContent
     }
     
-    func clearAllNotifications() {
-        notificationManager.cancelAllNotifications()
+    func clearAllNotifications() async {
+        await notificationManager.cancelAllNotifications()
         notifications.removeAll()
         updateHistoryStatus(.cancelled)
     }
@@ -229,8 +244,8 @@ class TextToBandViewModel: ObservableObject {
         return backupManager
     }
     
-    func exportBackup() {
-        backupManager.exportBackup(
+    func exportBackup() async {
+        let _ = await backupManager.exportBackup(
             settings: settings,
             templates: templateManager.templates,
             historyItems: historyManager.historyItems
