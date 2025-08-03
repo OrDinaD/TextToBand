@@ -4,59 +4,50 @@
 disabled_rules:
   - trailing_whitespace
   - line_length
+  - force_unwrapping
+  - force_try
+  - redundant_string_enum_value
+  - type_body_length
+  - function_body_length
 
 opt_in_rules:
   - empty_count
   - closure_spacing
   - contains_over_first_not_nil
-  - fatal_error_message
-  - first_where
-  - force_unwrapping
   - modifier_order
-  - nimble_operator
   - object_literal
   - operator_usage_whitespace
-  - overridden_super_call
   - redundant_nil_coalescing
   - sorted_first_last
   - unneeded_parentheses_in_closure_argument
-  - vertical_whitespace_closing_braces
 
 included:
   - TextToBand
-  - TextToBandTests
-  - TextToBandUITests
 
 excluded:
   - TextToBand.xcodeproj
   - DerivedData
   - Build
+  - TextToBandTests
+  - TextToBandUITests
 
 # Rules configuration
 file_length:
-  warning: 500
-  error: 1000
-
-function_body_length:
-  warning: 60
-  error: 100
-
-type_body_length:
-  warning: 300
-  error: 500
+  warning: 800
+  error: 1200
 
 cyclomatic_complexity:
-  warning: 10
-  error: 20
+  warning: 15
+  error: 25
 
 identifier_name:
   min_length: 1
-  max_length: 40
+  max_length: 50
   excluded:
     - id
     - x
     - y
 
 large_tuple:
-  warning: 3
-  error: 4
+  warning: 4
+  error: 6

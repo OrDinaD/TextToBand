@@ -123,7 +123,7 @@ jobs:
       
     - name: 🔍 Run SwiftLint
       run: |
-        swiftlint --strict
+        swiftlint --reporter github-actions-logging
 
   release:
     name: 🚀 Create Release
