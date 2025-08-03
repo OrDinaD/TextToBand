@@ -12,7 +12,8 @@
 </p>
 
 <div align="center">
-  <img src="https://via.placeholder.com/300x600/6366f1/ffffff?text=TextToBand+App" alt="App Screenshot" width="250">
+  <img src="screenshots/app_main.png" alt="Главный экран" width="250">
+  <img src="screenshots/app_notifications.png" alt="Экран уведомлений" width="250">
 </div>
 
 ## ✨ Основные возможности

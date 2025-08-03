@@ -1,21 +1,25 @@
-📋 **Изменения в версии v1.1.0**
+# Changelog
 
-🔄 **Коммиты с v1.0.3:**
-- feat: comprehensive iOS app modernization with latest iOS 18.5 features (OrDinaD)
-- docs: update CHANGELOG for v1.0.3 (GitHub Action)
-📊 **Статистика:**
-- Коммитов: 13
 ## [1.1.0] - 2025-08-03
 
-📋 **Изменения в версии v1.1.0**
+### Новое
+- 🎯 Модернизация для iOS 18.5 
+- ⚡ Async/await во всем приложении
+- 📝 OSLog для логирования
+- 🌟 Современные SwiftUI компоненты
+- 🎨 Улучшенный дизайн с Materials
+- 🚀 Увеличена производительность
 
-🔄 **Коммиты с v1.0.3:**
-- feat: comprehensive iOS app modernization with latest iOS 18.5 features (OrDinaD)
-- docs: update CHANGELOG for v1.0.3 (GitHub Action)
-📊 **Статистика:**
-- Коммитов: 13
-- Swift файлов:       21
-- Строк кода: 3237
+### Техническое
+- ✅ Исправлены тесты сборки
+- 🧪 Протестировано в iOS Simulator
+- 🔧 Очистка workspace
 
-- Swift файлов:       21
-- Строк кода: 3237
+## [1.0.0] - 2025-08-02
+
+### Новое
+- 📱 Первая версия приложения
+- 🔔 Разбивка текста на уведомления
+- 📚 История отправок
+- 📋 Шаблоны текстов
+- ⚙️ Настройки приложения
